@@ -6,4 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="../DanceLinkX.Default/DanceLinkX.Default.csproj" />
+    <ProjectReference Include="../Sudoku/Sudoku.csproj" />
+  </ItemGroup>
+
 </Project>

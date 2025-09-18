@@ -1,14 +1,16 @@
-using System.Numerics;
+﻿using System.Numerics;
 using DanceLinkX.Services;
 
-namespace Sudoku.Models;
+namespace Sudoku.Default;
 
 /// <summary>
 /// 数独类，相当于一个边长为size的二维数组，其中size只能是平方数
 /// </summary>
-public class SimpleSudoku
-    : IEquatable<SimpleSudoku>,
-        IEqualityOperators<SimpleSudoku, SimpleSudoku, bool>
+public class SudokuDefault
+    : ISudoku,
+        ISudokuAsync,
+        IEquatable<SudokuDefault>,
+        IEqualityOperators<SudokuDefault, SudokuDefault, bool>
 {
     public enum SolveType
     {
@@ -59,10 +61,10 @@ public class SimpleSudoku
         return false;
     }
 
-    public SimpleSudoku(IList<List<int>> board)
+    public SudokuDefault(IList<List<int>> board)
         : this(board.Select(x => x.ToArray()).ToArray()) { }
 
-    public SimpleSudoku(IList<IList<int>> board)
+    public SudokuDefault(IList<IList<int>> board)
     {
         int size = board.Count;
         if (size > 5 * 5)
@@ -106,15 +108,24 @@ public class SimpleSudoku
         }
     }
 
+    private IDlxAsync<(int, int, int), SolveNode> CreateDefaultDlx(
+        List<((int, int, int) idx, SolveNode node)> nodes
+    )
+    {
+        return new DanceLinkX.DlxDefault.Dlx<(int, int, int), SolveNode>(nodes);
+    }
+
+    public SudokuDefault? SolveNew() => SolveNew(CreateDefaultDlx);
+
     /// <summary>
     /// 求解并返回一个新的数独，不会改变原数独
     /// </summary>
     /// <param name="createDlx">舞蹈链算法的创建函数</param>
     /// <returns>null则无解</returns>
-    public SimpleSudoku? SolveNew(
+    public SudokuDefault? SolveNew(
         Func<
             List<((int, int, int) idx, SolveNode node)>,
-            IDlx<(int, int, int), SolveType>
+            IDlx<(int, int, int), SolveNode>
         > createDlx
     )
     {
@@ -126,6 +137,8 @@ public class SimpleSudoku
         return null;
     }
 
+    public bool Solve() => Solve(CreateDefaultDlx);
+
     /// <summary>
     /// 求解数独
     /// </summary>
@@ -134,7 +147,7 @@ public class SimpleSudoku
     public bool Solve(
         Func<
             List<((int, int, int) idx, SolveNode node)>,
-            IDlx<(int, int, int), SolveType>
+            IDlx<(int, int, int), SolveNode>
         > createDlx
     )
     {
@@ -150,15 +163,18 @@ public class SimpleSudoku
         return true;
     }
 
+    public async Task<SudokuDefault?> SolveNewAsync() =>
+        await SolveNewAsync(n => Task.FromResult(CreateDefaultDlx(n)));
+
     /// <summary>
     /// 求解并返回一个新的数独，不会改变原数独
     /// </summary>
     /// <param name="createDlx">舞蹈链算法的创建函数</param>
     /// <returns>null则无解</returns>
-    public async Task<SimpleSudoku?> SolveNewAsync(
+    public async Task<SudokuDefault?> SolveNewAsync(
         Func<
             List<((int, int, int) idx, SolveNode node)>,
-            Task<IDlxAsync<(int, int, int), SolveType>>
+            Task<IDlxAsync<(int, int, int), SolveNode>>
         > createDlx
     )
     {
@@ -170,6 +186,9 @@ public class SimpleSudoku
         return null;
     }
 
+    public async Task<bool> SolveAsync() =>
+        await SolveAsync(n => Task.FromResult(CreateDefaultDlx(n)));
+
     /// <summary>
     /// 求解数独
     /// </summary>
@@ -178,7 +197,7 @@ public class SimpleSudoku
     public async Task<bool> SolveAsync(
         Func<
             List<((int, int, int) idx, SolveNode node)>,
-            Task<IDlxAsync<(int, int, int), SolveType>>
+            Task<IDlxAsync<(int, int, int), SolveNode>>
         > createDlx
     )
     {
@@ -195,12 +214,12 @@ public class SimpleSudoku
     }
 
     /// <summary>
-    /// 判断在(i, j)位置添加value是否合法，不改变原数独，注意不是判断整个数独是否有解
+    /// 判断在(i, j)位置添加value是否有效，不改变原数独，注意不是判断整个数独是否有解
     /// </summary>
     /// <param name="i">i</param>
     /// <param name="j">j</param>
     /// <param name="value">value</param>
-    /// <returns>是否合法</returns>
+    /// <returns>是否有效</returns>
     /// <exception cref="ArgumentOutOfRangeException">索引超出范围</exception>
     public bool IsValidAdd(int i, int j, int value)
     {
@@ -225,6 +244,7 @@ public class SimpleSudoku
     /// <param name="i"></param>
     /// <param name="j"></param>
     /// <returns></returns>
+    /// <exception cref="ArgumentOutOfRangeException">索引超出范围</exception>
     public int GetValue(int i, int j)
     {
         CheckOverflow(i, j);
@@ -232,7 +252,7 @@ public class SimpleSudoku
     }
 
     /// <summary>
-    /// 在(i, j)位置添加value，不判断是否合法
+    /// 在(i, j)位置添加value，不判断是否有效
     /// </summary>
     /// <param name="i"></param>
     /// <param name="j"></param>
@@ -282,6 +302,30 @@ public class SimpleSudoku
         _rowNumberCount[i, value]--;
         _columnNumberCount[j, value]--;
         _blockNumberCount[GetBlockIdx(i, j), value]--;
+    }
+
+    /// <summary>
+    /// 在(i, j)位置添加或移除value，不判断是否有效
+    /// 当value为0时，移除value，否则添加value
+    /// </summary>
+    /// <param name="i"></param>
+    /// <param name="j"></param>
+    /// <param name="value"></param>
+    /// <exception cref="ArgumentOutOfRangeException">索引超出范围</exception>
+    public int this[int i, int j]
+    {
+        get => GetValue(i, j);
+        set
+        {
+            if (value == 0)
+            {
+                RemoveValue(i, j);
+            }
+            else
+            {
+                SetValue(i, j, value);
+            }
+        }
     }
 
     /// <summary>
@@ -362,6 +406,7 @@ public class SimpleSudoku
     /// <param name="i">行</param>
     /// <param name="j">列</param>
     /// <returns></returns>
+    /// <exception cref="ArgumentOutOfRangeException">索引超过范围</exception>
     public int GetBlockIdx(int i, int j)
     {
         CheckOverflow(i, j);
@@ -446,7 +491,7 @@ public class SimpleSudoku
     /// 克隆数独
     /// </summary>
     /// <returns></returns>
-    public SimpleSudoku Clone()
+    public SudokuDefault Clone()
     {
         int[][] arr = new int[Size][];
         for (int i = 0; i < Size; i++)
@@ -458,11 +503,11 @@ public class SimpleSudoku
             }
             arr[i] = inner;
         }
-        var sudoku = new SimpleSudoku(arr);
+        var sudoku = new SudokuDefault(arr);
         return sudoku;
     }
 
-    public bool Equals(SimpleSudoku? other)
+    public bool Equals(SudokuDefault? other)
     {
         if (other is null)
             return false;
@@ -479,48 +524,48 @@ public class SimpleSudoku
         return true;
     }
 
-    /// <summary>
-    /// 在(i, j)位置添加或移除value，不判断是否合法
-    /// 当value为0时，移除value，否则添加value
-    /// </summary>
-    /// <param name="i"></param>
-    /// <param name="j"></param>
-    /// <param name="value"></param>
-    /// <exception cref="ArgumentOutOfRangeException">索引超出范围</exception>
-    /// <exception cref="NotSupportedException">添加时该位置已经有值，或移除时该位置没有值</exception>
-    public int this[int i, int j]
-    {
-        get => _board[i, j];
-        set
-        {
-            if (value == 0)
-            {
-                RemoveValue(i, j);
-            }
-            else
-            {
-                SetValue(i, j, value);
-            }
-        }
-    }
-
-    public static bool operator ==(SimpleSudoku? left, SimpleSudoku? right)
+    public static bool operator ==(SudokuDefault? left, SudokuDefault? right)
     {
         return Equals(left, right);
     }
 
-    public static bool operator !=(SimpleSudoku? left, SimpleSudoku? right)
+    public static bool operator !=(SudokuDefault? left, SudokuDefault? right)
     {
         return !Equals(left, right);
     }
 
     public override bool Equals(object? obj)
     {
-        return Equals(obj as SimpleSudoku);
+        return Equals(obj as SudokuDefault);
     }
 
     public override int GetHashCode()
     {
         return _hashCode;
+    }
+
+    ISudoku? ISudoku.SolveNew()
+    {
+        return SolveNew();
+    }
+
+    ISudoku ISudoku.Clone()
+    {
+        return Clone();
+    }
+
+    bool IEquatable<ISudoku>.Equals(ISudoku? other)
+    {
+        return Equals(other);
+    }
+
+    Task<bool> ISudokuAsync.SolveAsync()
+    {
+        return SolveAsync();
+    }
+
+    async Task<ISudoku?> ISudokuAsync.SolveNewAsync()
+    {
+        return await SolveNewAsync();
     }
 }
