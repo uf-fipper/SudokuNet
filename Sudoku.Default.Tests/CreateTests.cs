@@ -239,6 +239,10 @@ public class CreateTests
         random = new Random(12345678);
         sudoku = SudokuDefault.NewSudoku(9, random);
         Assert.AreEqual(sudoku.SolveAll().Count(), 1);
+
+        var random1 = new Random(12345678);
+        var sudoku1 = SudokuDefault.NewSudoku(9, random1);
+        Assert.AreEqual(sudoku, sudoku1);
     }
 
     [TestMethod]
@@ -259,5 +263,9 @@ public class CreateTests
         random = new Random(12345678);
         sudoku = await SudokuDefault.NewSudokuAsync(9, random);
         Assert.AreEqual(sudoku.SolveAll().Count(), 1);
+
+        var random1 = new Random(12345678);
+        var sudoku1 = SudokuDefault.NewSudoku(9, random1);
+        Assert.AreEqual(sudoku, sudoku1);
     }
 }
