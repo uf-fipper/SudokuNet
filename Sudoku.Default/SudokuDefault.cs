@@ -108,8 +108,8 @@ public class SudokuDefault
         }
     }
 
-    private IDlxAsync<(int, int, int), SolveNode> CreateDefaultDlx(
-        List<((int, int, int) idx, SolveNode node)> nodes
+    private static IDlxAsync<(int, int, int), SolveNode> CreateDefaultDlx(
+        IList<((int, int, int) idx, SolveNode node)> nodes
     )
     {
         return new DanceLinkX.DlxDefault.Dlx<(int, int, int), SolveNode>(nodes);
@@ -504,6 +504,119 @@ public class SudokuDefault
             arr[i] = inner;
         }
         var sudoku = new SudokuDefault(arr);
+        return sudoku;
+    }
+
+    /// <summary>
+    /// 求数独的所有解
+    /// </summary>
+    /// <returns></returns>
+    public IEnumerable<SudokuDefault> SolveAll()
+    {
+        return SolveAllAsync().ToBlockingEnumerable();
+    }
+
+    /// <summary>
+    /// 异步求数独的所有解
+    /// </summary>
+    /// <returns></returns>
+    public async IAsyncEnumerable<SudokuDefault> SolveAllAsync()
+    {
+        var nodes = SolveGetNodes();
+        var dlx = CreateDefaultDlx(nodes);
+        await foreach (var one in dlx.DanceAsync())
+        {
+            var sudoku = Clone();
+            sudoku.SolveSetValues(one);
+            yield return sudoku;
+        }
+    }
+
+    /// <summary>
+    /// 创建一个唯一解的随机数独
+    /// </summary>
+    /// <param name="size"></param>
+    /// <param name="random"></param>
+    /// <returns></returns>
+    public static SudokuDefault NewSudoku(int size, Random? random)
+    {
+        random ??= new Random();
+        // 先创建一个完全体数独
+        int[][] sudokuValues = new int[size][];
+        for (int i = 0; i < size; i++)
+        {
+            sudokuValues[i] = new int[size];
+        }
+        var sudoku = new SudokuDefault(sudokuValues);
+        var nodes = sudoku.SolveGetNodes().ToArray();
+        random.Shuffle(nodes);
+        var dlx = CreateDefaultDlx(nodes);
+        using var solver = dlx.Dance().GetEnumerator();
+        solver.MoveNext();
+        var values = solver.Current;
+        sudoku.SolveSetValues(values);
+
+        // 现在开始挖洞
+        var idxList = Enumerable
+            .Range(0, size)
+            .SelectMany(i => Enumerable.Range(0, size).Select(j => (i, j)))
+            .ToArray();
+        random.Shuffle(idxList);
+        foreach (var (i, j) in idxList)
+        {
+            int value = sudoku[i, j];
+            sudoku.RemoveValueInternal(i, j);
+            using var solver1 = sudoku.SolveAll().GetEnumerator();
+            solver1.MoveNext();
+            if (solver1.MoveNext())
+            {
+                sudoku.SetValueInternal(i, j, value);
+            }
+        }
+        return sudoku;
+    }
+
+    /// <summary>
+    /// 异步创建一个唯一解的随机数独
+    /// </summary>
+    /// <param name="size"></param>
+    /// <param name="random"></param>
+    /// <returns></returns>
+    public static async Task<SudokuDefault> NewSudokuAsync(int size, Random? random)
+    {
+        random ??= new Random();
+        // 先创建一个完全体数独
+        int[][] sudokuValues = new int[size][];
+        for (int i = 0; i < size; i++)
+        {
+            sudokuValues[i] = new int[size];
+        }
+        var sudoku = new SudokuDefault(sudokuValues);
+        var nodes = sudoku.SolveGetNodes().ToArray();
+        random.Shuffle(nodes);
+        var dlx = CreateDefaultDlx(nodes);
+        await using var solver = dlx.DanceAsync().GetAsyncEnumerator();
+        await solver.MoveNextAsync();
+        var values = solver.Current;
+        sudoku.SolveSetValues(values);
+
+        // 现在开始挖洞
+        var idxList = Enumerable
+            .Range(0, size)
+            .SelectMany(i => Enumerable.Range(0, size).Select(j => (i, j)))
+            .ToArray();
+        random.Shuffle(idxList);
+        foreach (var (i, j) in idxList)
+        {
+            int value = sudoku[i, j];
+            sudoku.RemoveValueInternal(i, j);
+            await using var solver1 = sudoku.SolveAllAsync().GetAsyncEnumerator();
+            await solver1.MoveNextAsync();
+            if (await solver1.MoveNextAsync())
+            {
+                sudoku.SetValueInternal(i, j, value);
+            }
+        }
         return sudoku;
     }
 

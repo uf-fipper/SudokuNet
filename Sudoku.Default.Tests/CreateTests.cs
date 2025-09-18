@@ -220,4 +220,44 @@ public class CreateTests
         }
         Assert.AreEqual(raw[0, 2], 0);
     }
+
+    [TestMethod]
+    public void RandomNewTest()
+    {
+        var random = new Random(1);
+        var sudoku = SudokuDefault.NewSudoku(9, random);
+        Assert.AreEqual(sudoku.SolveAll().Count(), 1);
+
+        random = new Random(2);
+        sudoku = SudokuDefault.NewSudoku(9, random);
+        Assert.AreEqual(sudoku.SolveAll().Count(), 1);
+
+        random = new Random(3);
+        sudoku = SudokuDefault.NewSudoku(9, random);
+        Assert.AreEqual(sudoku.SolveAll().Count(), 1);
+
+        random = new Random(12345678);
+        sudoku = SudokuDefault.NewSudoku(9, random);
+        Assert.AreEqual(sudoku.SolveAll().Count(), 1);
+    }
+
+    [TestMethod]
+    public async Task RandomNewAsyncTest()
+    {
+        var random = new Random(1);
+        var sudoku = await SudokuDefault.NewSudokuAsync(9, random);
+        Assert.AreEqual(sudoku.SolveAll().Count(), 1);
+
+        random = new Random(2);
+        sudoku = await SudokuDefault.NewSudokuAsync(9, random);
+        Assert.AreEqual(sudoku.SolveAll().Count(), 1);
+
+        random = new Random(3);
+        sudoku = await SudokuDefault.NewSudokuAsync(9, random);
+        Assert.AreEqual(sudoku.SolveAll().Count(), 1);
+
+        random = new Random(12345678);
+        sudoku = await SudokuDefault.NewSudokuAsync(9, random);
+        Assert.AreEqual(sudoku.SolveAll().Count(), 1);
+    }
 }
