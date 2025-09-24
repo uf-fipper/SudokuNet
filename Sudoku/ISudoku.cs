@@ -13,6 +13,11 @@ public interface ISudoku : IEquatable<ISudoku>
     int Size { get; }
 
     /// <summary>
+    /// 数独的原始值列表（无法重写的值）
+    /// </summary>
+    ICollection<(int i, int j)> BaseIndexs { get; }
+
+    /// <summary>
     /// 求解，返回false时不改变原数独
     /// </summary>
     /// <returns>如果有解，返回true，否则返回false</returns>
@@ -25,14 +30,24 @@ public interface ISudoku : IEquatable<ISudoku>
     ISudoku? SolveNew();
 
     /// <summary>
-    /// 判断在(i, j)位置添加value是有效，不改变原数独，注意不是判断整个数独是否有解
+    /// 判断在(i, j)位置能否添加value，不判断是否有效
+    /// </summary>
+    /// <param name="i"></param>
+    /// <param name="j"></param>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    bool IsValidAdd(int i, int j, int value);
+
+    /// <summary>
+    /// 判断在(i, j)位置添加value是否有效，不改变原数独，注意不是判断整个数独是否有解
     /// </summary>
     /// <param name="i">i</param>
     /// <param name="j">j</param>
     /// <param name="value">value</param>
     /// <returns>是否有效</returns>
     /// <exception cref="ArgumentOutOfRangeException">索引超出范围</exception>
-    bool IsValidAdd(int i, int j, int value);
+    /// <exception cref="ChangeBaseIndexException">是数独原来的索引，不可修改</exception>
+    bool IsValidAfterAdd(int i, int j, int value);
 
     /// <summary>
     /// 获取(i, j)位置的值
@@ -50,6 +65,7 @@ public interface ISudoku : IEquatable<ISudoku>
     /// <param name="j"></param>
     /// <param name="value"></param>
     /// <exception cref="ArgumentOutOfRangeException">索引超出范围</exception>
+    /// <exception cref="ChangeBaseIndexException">是数独原来的索引，不可修改</exception>
     void SetValue(int i, int j, int value);
 
     /// <summary>
@@ -58,6 +74,7 @@ public interface ISudoku : IEquatable<ISudoku>
     /// <param name="i"></param>
     /// <param name="j"></param>
     /// <exception cref="ArgumentOutOfRangeException">索引超出范围</exception>
+    /// <exception cref="ChangeBaseIndexException">是数独原来的索引，不可修改</exception>
     void RemoveValue(int i, int j);
 
     /// <summary>
@@ -116,7 +133,16 @@ public interface ISudoku : IEquatable<ISudoku>
     /// <param name="j"></param>
     /// <param name="value"></param>
     /// <exception cref="ArgumentOutOfRangeException">索引超出范围</exception>
+    /// <exception cref="ChangeBaseIndexException">是数独原来的索引，不可修改</exception>
     int this[int i, int j] { get; set; }
+
+    /// <summary>
+    /// 判断(i, j)是否是数独的原始值，即是否是数独的初始值
+    /// </summary>
+    /// <param name="i"></param>
+    /// <param name="j"></param>
+    /// <returns></returns>
+    public bool IsBaseIndex(int i, int j);
 }
 
 public interface ISudokuAsync : ISudoku

@@ -32,6 +32,8 @@ public class SudokuDefault
     /// </summary>
     public int Size { get; }
 
+    public ICollection<(int i, int j)> BaseIndexs { get; }
+
     private readonly int[,] _board;
 
     /// <summary>
@@ -86,6 +88,7 @@ public class SudokuDefault
         _columnNumberCount = new int[size, size + 1];
         _blockNumberCount = new int[size, size + 1];
         _hashCode = 0;
+        BaseIndexs = new HashSet<(int, int)>();
         for (int i = 0; i < size; i++)
         {
             var row = board[i];
@@ -103,6 +106,7 @@ public class SudokuDefault
                 if (value != 0)
                 {
                     SetValueInternal(i, j, value);
+                    BaseIndexs.Add((i, j));
                 }
             }
         }
@@ -213,6 +217,17 @@ public class SudokuDefault
         return true;
     }
 
+    public bool IsValidAdd(int i, int j, int value)
+    {
+        if (CheckOverflow(i, j))
+            return false;
+        if (value <= 0 || value > Size)
+            return false;
+        if (IsBaseIndex(i, j))
+            return false;
+        return true;
+    }
+
     /// <summary>
     /// 判断在(i, j)位置添加value是否有效，不改变原数独，注意不是判断整个数独是否有解
     /// </summary>
@@ -221,11 +236,14 @@ public class SudokuDefault
     /// <param name="value">value</param>
     /// <returns>是否有效</returns>
     /// <exception cref="ArgumentOutOfRangeException">索引超出范围</exception>
-    public bool IsValidAdd(int i, int j, int value)
+    /// <exception cref="ChangeBaseIndexException">是数独原来的索引，不可修改</exception>
+    public bool IsValidAfterAdd(int i, int j, int value)
     {
-        CheckOverflow(i, j);
+        CheckOverflowAndThrow(i, j);
         if (value <= 0 || value > Size)
             throw new ArgumentOutOfRangeException(nameof(value));
+        if (IsBaseIndex(i, j))
+            throw new ChangeBaseIndexException(i, j);
         if (
             _board[i, j] != 0
             || _rowNumberCount[i, value] > 0
@@ -247,7 +265,7 @@ public class SudokuDefault
     /// <exception cref="ArgumentOutOfRangeException">索引超出范围</exception>
     public int GetValue(int i, int j)
     {
-        CheckOverflow(i, j);
+        CheckOverflowAndThrow(i, j);
         return _board[i, j];
     }
 
@@ -258,11 +276,14 @@ public class SudokuDefault
     /// <param name="j"></param>
     /// <param name="value"></param>
     /// <exception cref="ArgumentOutOfRangeException">索引超出范围</exception>
+    /// <exception cref="ChangeBaseIndexException">是数独原来的索引，不可修改</exception>
     public void SetValue(int i, int j, int value)
     {
-        CheckOverflow(i, j);
+        CheckOverflowAndThrow(i, j);
         if (value <= 0 || value > Size)
             throw new ArgumentOutOfRangeException(nameof(value));
+        if (IsBaseIndex(i, j))
+            throw new ChangeBaseIndexException(i, j);
         if (_board[i, j] != 0)
         {
             RemoveValueInternal(i, j);
@@ -285,9 +306,12 @@ public class SudokuDefault
     /// <param name="i"></param>
     /// <param name="j"></param>
     /// <exception cref="ArgumentOutOfRangeException">索引超出范围</exception>
+    /// <exception cref="ChangeBaseIndexException">是数独原来的索引，不可修改</exception>
     public void RemoveValue(int i, int j)
     {
-        CheckOverflow(i, j);
+        CheckOverflowAndThrow(i, j);
+        if (IsBaseIndex(i, j))
+            throw new ChangeBaseIndexException(i, j);
         int value = _board[i, j];
         if (value == 0)
             return;
@@ -312,6 +336,7 @@ public class SudokuDefault
     /// <param name="j"></param>
     /// <param name="value"></param>
     /// <exception cref="ArgumentOutOfRangeException">索引超出范围</exception>
+    /// <exception cref="ChangeBaseIndexException">是数独原来的索引，不可修改</exception>
     public int this[int i, int j]
     {
         get => GetValue(i, j);
@@ -409,13 +434,22 @@ public class SudokuDefault
     /// <exception cref="ArgumentOutOfRangeException">索引超过范围</exception>
     public int GetBlockIdx(int i, int j)
     {
-        CheckOverflow(i, j);
+        CheckOverflowAndThrow(i, j);
         return GetBlockIdxInternal(i, j);
     }
 
     private int GetBlockIdxInternal(int i, int j) => i / MinSize * MinSize + j / MinSize;
 
-    public void CheckOverflow(int i, int j)
+    public bool CheckOverflow(int i, int j)
+    {
+        if (i < 0 || i >= Size)
+            return true;
+        if (j < 0 || j >= Size)
+            return true;
+        return false;
+    }
+
+    public void CheckOverflowAndThrow(int i, int j)
     {
         if (i < 0 || i >= Size)
             throw new ArgumentOutOfRangeException(nameof(i));
@@ -680,5 +714,10 @@ public class SudokuDefault
     async Task<ISudoku?> ISudokuAsync.SolveNewAsync()
     {
         return await SolveNewAsync();
+    }
+
+    public bool IsBaseIndex(int i, int j)
+    {
+        return BaseIndexs.Contains((i, j));
     }
 }

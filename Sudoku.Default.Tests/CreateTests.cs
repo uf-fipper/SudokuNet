@@ -57,11 +57,14 @@ public class CreateTests
         var sudoku = CreateDefaultSudoku();
         var raw = CreateDefaultSudoku();
         Assert.IsTrue(sudoku.IsValid());
+        Assert.IsFalse(sudoku.IsValidAdd(0, 0, 1));
         Assert.IsFalse(sudoku.IsValidAdd(0, 0, 5));
-        Assert.IsFalse(sudoku.IsValidAdd(0, 2, 3));
-        Assert.IsFalse(sudoku.IsValidAdd(0, 2, 8));
-        Assert.IsFalse(sudoku.IsValidAdd(0, 2, 6));
-        Assert.IsTrue(sudoku.IsValidAdd(0, 2, 4));
+        Assert.IsTrue(sudoku.IsValidAdd(0, 2, 3));
+        Assert.IsTrue(sudoku.IsValidAdd(0, 2, 5));
+        Assert.IsFalse(sudoku.IsValidAfterAdd(0, 2, 3));
+        Assert.IsFalse(sudoku.IsValidAfterAdd(0, 2, 8));
+        Assert.IsFalse(sudoku.IsValidAfterAdd(0, 2, 6));
+        Assert.IsTrue(sudoku.IsValidAfterAdd(0, 2, 4));
         Assert.AreEqual(sudoku, raw);
     }
 
@@ -267,5 +270,58 @@ public class CreateTests
         var random1 = new Random(12345678);
         var sudoku1 = SudokuDefault.NewSudoku(9, random1);
         Assert.AreEqual(sudoku, sudoku1);
+    }
+
+    [TestMethod]
+    public void BaseIndexTest()
+    {
+        var sudoku = CreateDefaultSudoku();
+        var left = sudoku.BaseIndexs.OrderBy(x => x.i).ThenBy(x => x.j).ToArray();
+        (int, int)[] right =
+        [
+            (0, 0),
+            (0, 1),
+            (0, 4),
+            (1, 0),
+            (1, 3),
+            (1, 4),
+            (1, 5),
+            (2, 1),
+            (2, 2),
+            (2, 7),
+            (3, 0),
+            (3, 4),
+            (3, 8),
+            (4, 0),
+            (4, 3),
+            (4, 5),
+            (4, 8),
+            (5, 0),
+            (5, 4),
+            (5, 8),
+            (6, 1),
+            (6, 6),
+            (6, 7),
+            (7, 3),
+            (7, 4),
+            (7, 5),
+            (7, 8),
+            (8, 4),
+            (8, 7),
+            (8, 8),
+        ];
+        Assert.IsTrue(left.SequenceEqual(right));
+
+        Assert.ThrowsException<ChangeBaseIndexException>(() => sudoku.SetValue(0, 0, 1));
+        Assert.ThrowsException<ChangeBaseIndexException>(() => sudoku.RemoveValue(0, 0));
+        Assert.ThrowsException<ChangeBaseIndexException>(() => sudoku[0, 0] = 1);
+        Assert.ThrowsException<ChangeBaseIndexException>(() => sudoku[0, 0] = 0);
+        Assert.ThrowsException<ChangeBaseIndexException>(() => sudoku.IsValidAfterAdd(0, 0, 1));
+        Assert.IsFalse(sudoku.IsValidAdd(0, 0, 1));
+        Assert.IsTrue(left.SequenceEqual(right));
+        Assert.IsTrue(sudoku[0, 0] == 5);
+
+        sudoku[1, 1] = 3;
+        Assert.IsTrue(left.SequenceEqual(right));
     }
 }
