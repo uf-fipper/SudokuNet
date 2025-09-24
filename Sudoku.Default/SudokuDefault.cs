@@ -32,7 +32,7 @@ public class SudokuDefault
     /// </summary>
     public int Size { get; }
 
-    public ICollection<(int i, int j)> BaseIndexs { get; }
+    public ICollection<(int i, int j)> BaseIndexs { get; private set; }
 
     private readonly int[,] _board;
 
@@ -607,6 +607,8 @@ public class SudokuDefault
                 sudoku.SetValueInternal(i, j, value);
             }
         }
+        // 重新赋值 BaseIndexs
+        sudoku.ResetBaseIndexs();
         return sudoku;
     }
 
@@ -651,7 +653,25 @@ public class SudokuDefault
                 sudoku.SetValueInternal(i, j, value);
             }
         }
+        // 重新赋值 BaseIndexs
+        sudoku.ResetBaseIndexs();
         return sudoku;
+    }
+
+    private void ResetBaseIndexs()
+    {
+        int size = Size;
+        BaseIndexs = [];
+        for (int i = 0; i < size; i++)
+        {
+            for (int j = 0; j < size; j++)
+            {
+                if (this[i, j] != 0)
+                {
+                    BaseIndexs.Add((i, j));
+                }
+            }
+        }
     }
 
     public bool Equals(SudokuDefault? other)
