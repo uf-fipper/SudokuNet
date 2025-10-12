@@ -142,7 +142,13 @@ public interface ISudoku : IEquatable<ISudoku>
     /// <param name="i"></param>
     /// <param name="j"></param>
     /// <returns></returns>
-    public bool IsBaseIndex(int i, int j);
+    bool IsBaseIndex(int i, int j);
+
+    /// <summary>
+    /// 数独是否已完成
+    /// </summary>
+    /// <returns></returns>
+    bool IsWin();
 }
 
 public interface ISudokuAsync : ISudoku

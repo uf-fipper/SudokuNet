@@ -566,13 +566,16 @@ public class SudokuDefault
         }
     }
 
+    public static SudokuDefault NewSudoku(int size, Random? random) =>
+        NewSudoku(size, random, int.MaxValue);
+
     /// <summary>
     /// 创建一个唯一解的随机数独
     /// </summary>
     /// <param name="size"></param>
     /// <param name="random"></param>
     /// <returns></returns>
-    public static SudokuDefault NewSudoku(int size, Random? random)
+    public static SudokuDefault NewSudoku(int size, Random? random, int maxCount)
     {
         random ??= new Random();
         // 先创建一个完全体数独
@@ -596,6 +599,7 @@ public class SudokuDefault
             .SelectMany(i => Enumerable.Range(0, size).Select(j => (i, j)))
             .ToArray();
         random.Shuffle(idxList);
+        idxList = idxList.Take(maxCount).ToArray();
         foreach (var (i, j) in idxList)
         {
             int value = sudoku[i, j];
@@ -612,13 +616,16 @@ public class SudokuDefault
         return sudoku;
     }
 
+    public static Task<SudokuDefault> NewSudokuAsync(int size, Random? random) =>
+        NewSudokuAsync(size, random, int.MaxValue);
+
     /// <summary>
     /// 异步创建一个唯一解的随机数独
     /// </summary>
     /// <param name="size"></param>
     /// <param name="random"></param>
     /// <returns></returns>
-    public static async Task<SudokuDefault> NewSudokuAsync(int size, Random? random)
+    public static async Task<SudokuDefault> NewSudokuAsync(int size, Random? random, int maxCount)
     {
         random ??= new Random();
         // 先创建一个完全体数独
@@ -642,6 +649,7 @@ public class SudokuDefault
             .SelectMany(i => Enumerable.Range(0, size).Select(j => (i, j)))
             .ToArray();
         random.Shuffle(idxList);
+        idxList = idxList.Take(maxCount).ToArray();
         foreach (var (i, j) in idxList)
         {
             int value = sudoku[i, j];
@@ -739,5 +747,24 @@ public class SudokuDefault
     public bool IsBaseIndex(int i, int j)
     {
         return BaseIndexs.Contains((i, j));
+    }
+
+    public bool IsWin()
+    {
+        for (int i = 0; i < Size; i++)
+        {
+            for (int v = 1; v <= Size; v++)
+            {
+                if (
+                    RowNumberCount(i, v) != 1
+                    || ColumnNumberCount(i, v) != 1
+                    || BlockNumberCount(i, v) != 1
+                )
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }
