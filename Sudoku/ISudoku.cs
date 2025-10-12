@@ -149,6 +149,12 @@ public interface ISudoku : IEquatable<ISudoku>
     /// </summary>
     /// <returns></returns>
     bool IsWin();
+
+    /// <summary>
+    /// 获取二维数组棋盘
+    /// </summary>
+    /// <returns></returns>
+    int[][] GetBoard();
 }
 
 public interface ISudokuAsync : ISudoku

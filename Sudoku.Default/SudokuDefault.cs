@@ -767,4 +767,19 @@ public class SudokuDefault
         }
         return true;
     }
+
+    public int[][] GetBoard()
+    {
+        int size = Size;
+        var board = new int[size][];
+        for (int i = 0; i < size; i++)
+        {
+            board[i] = new int[size];
+            for (int j = 0; j < size; j++)
+            {
+                board[i][j] = this[i, j];
+            }
+        }
+        return board;
+    }
 }
