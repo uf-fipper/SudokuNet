@@ -599,7 +599,7 @@ public class SudokuDefault
             .SelectMany(i => Enumerable.Range(0, size).Select(j => (i, j)))
             .ToArray();
         random.Shuffle(idxList);
-        idxList = idxList.Take(maxCount).ToArray();
+        int count = 0;
         foreach (var (i, j) in idxList)
         {
             int value = sudoku[i, j];
@@ -609,6 +609,12 @@ public class SudokuDefault
             if (solver1.MoveNext())
             {
                 sudoku.SetValueInternal(i, j, value);
+            }
+            else
+            {
+                count++;
+                if (count >= maxCount)
+                    break;
             }
         }
         // 重新赋值 BaseIndexs
@@ -649,7 +655,7 @@ public class SudokuDefault
             .SelectMany(i => Enumerable.Range(0, size).Select(j => (i, j)))
             .ToArray();
         random.Shuffle(idxList);
-        idxList = idxList.Take(maxCount).ToArray();
+        int count = 0;
         foreach (var (i, j) in idxList)
         {
             int value = sudoku[i, j];
@@ -659,6 +665,12 @@ public class SudokuDefault
             if (await solver1.MoveNextAsync())
             {
                 sudoku.SetValueInternal(i, j, value);
+            }
+            else
+            {
+                count++;
+                if (count >= maxCount)
+                    break;
             }
         }
         // 重新赋值 BaseIndexs
